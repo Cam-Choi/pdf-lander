@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Document</title>
+    <title>PDF Viewer</title>
     <style>
       :root { --bg: #0e0e0f; --fg: #e8e8ea; }
       html, body { height: 100%; margin: 0; background: var(--bg); color: var(--fg); }
@@ -20,30 +20,27 @@
     </style>
   </head>
   <body>
-    <!-- Desktop/modern browsers: native inline PDF -->
-    <iframe id="desktop-frame" class="viewer" src="document.pdf" title="PDF"></iframe>
+    <!-- Desktop: native inline PDF -->
+    <iframe id="desktop-frame" class="viewer" src="https://Cam-Choi.github.io/pdf-lander/document.pdf" title="PDF"></iframe>
 
-    <!-- Mobile: clean, scroll-only renderer (no toolbar), fits width -->
+    <!-- Mobile: scroll-only renderer -->
     <div id="mobile-root" aria-live="polite">
       <div id="loading">Loading PDF…</div>
       <div id="pages"></div>
       <div id="fallback">
-        <p>Unable to display the PDF. <a href="document.pdf">Open the file</a>.</p>
+        <p>Unable to display the PDF. <a href="https://Cam-Choi.github.io/pdf-lander/document.pdf">Open the file</a>.</p>
       </div>
     </div>
 
-    <!-- Use local PDF.js build already in your repo: /pdfjs/build/* -->
+    <!-- Load PDF.js from your repo's build folder -->
     <script>
       const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
       if (!isMobile) {
-        // Desktop keeps native inline viewer
         document.getElementById('desktop-frame').style.display = 'block';
       } else {
-        // Mobile: render with PDF.js for proper multi-page + fit-to-width scrolling
         document.getElementById('desktop-frame').style.display = 'none';
         document.getElementById('mobile-root').style.display = 'block';
 
-        // Dynamically load PDF.js from local build
         const script = document.createElement('script');
         script.src = 'pdfjs/build/pdf.js';
         script.onload = startMobileRenderer;
@@ -54,10 +51,9 @@
       function startMobileRenderer() {
         if (!window['pdfjsLib']) { document.getElementById('fallback').style.display = 'grid'; return; }
         const pdfjsLib = window['pdfjsLib'];
-        // Point the worker to the local file as well
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdfjs/build/pdf.worker.js';
 
-        const url = 'document.pdf'; // If your PDF has a different name, change here
+        const url = 'https://Cam-Choi.github.io/pdf-lander/document.pdf';
         const pagesContainer = document.getElementById('pages');
         const loading = document.getElementById('loading');
 
@@ -66,13 +62,11 @@
           if (!total) throw new Error('Empty PDF');
           loading.textContent = `Rendering 1/${total}…`;
 
-          // Render pages sequentially to avoid thrashing on mobile
           for (let p = 1; p <= total; p++) {
             const page = await pdf.getPage(p);
 
-            // Determine scale to fit page width to viewport (with small side padding)
             const unscaledViewport = page.getViewport({ scale: 1 });
-            const targetWidth = Math.min(document.documentElement.clientWidth, window.innerWidth) - 16; // 8px padding each side
+            const targetWidth = Math.min(document.documentElement.clientWidth, window.innerWidth) - 16;
             const scale = Math.max(0.1, targetWidth / unscaledViewport.width);
             const viewport = page.getViewport({ scale });
 
@@ -95,15 +89,5 @@
         });
       }
     </script>
-
-    <!-- If you still prefer the full PDF.js viewer on mobile, remove the custom renderer above
-         and instead use this link (ensure the path to your PDF is correct from /pdfjs/web/):
-         /pdfjs/web/viewer.html?file=../../document.pdf#zoom=page-width
-         Note the ../../ (from /pdfjs/web/ to repo root). Using ../document.pdf would be WRONG. -->
-
-    <noscript>
-      <!-- No JS? Fall back to the full viewer with a correct relative path -->
-      <meta http-equiv="refresh" content="0; url=pdfjs/web/viewer.html?file=../../document.pdf#zoom=page-width" />
-    </noscript>
   </body>
 </html>
