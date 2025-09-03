@@ -10,7 +10,7 @@
       .viewer, iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); }
       body { overscroll-behavior: none; }
 
-      /* Mobile renderer */
+      /* Mobile scroll renderer */
       #mobile-root { position: fixed; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px 0 48px; display: none; }
       #pages { display: flex; flex-direction: column; align-items: center; gap: 12px; }
       canvas { max-width: 100%; height: auto; box-shadow: 0 2px 24px rgba(0,0,0,.4); border-radius: 6px; background: #111; }
@@ -32,32 +32,37 @@
       </div>
     </div>
 
-    <!-- Load PDF.js from your repo's build folder -->
     <script>
       const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const PDF_URL = "https://Cam-Choi.github.io/pdf-lander/document.pdf";
+
       if (!isMobile) {
+        // Desktop uses built-in viewer
         document.getElementById('desktop-frame').style.display = 'block';
       } else {
+        // Mobile: use PDF.js (CDN) and render pages into canvases
         document.getElementById('desktop-frame').style.display = 'none';
         document.getElementById('mobile-root').style.display = 'block';
 
         const script = document.createElement('script');
-        script.src = 'pdfjs/build/pdf.js';
+        // Stable classic build (includes window.pdfjsLib)
+        script.src = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js";
         script.onload = startMobileRenderer;
         script.onerror = () => document.getElementById('fallback').style.display = 'grid';
         document.head.appendChild(script);
       }
 
       function startMobileRenderer() {
-        if (!window['pdfjsLib']) { document.getElementById('fallback').style.display = 'grid'; return; }
-        const pdfjsLib = window['pdfjsLib'];
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdfjs/build/pdf.worker.js';
+        const pdfjsLib = window.pdfjsLib;
+        if (!pdfjsLib) { document.getElementById('fallback').style.display = 'grid'; return; }
 
-        const url = 'https://Cam-Choi.github.io/pdf-lander/document.pdf';
+        // Avoid needing a worker file; run in main thread (fine for typical PDFs)
+        const getDocOpts = { url: PDF_URL, disableWorker: true };
+
         const pagesContainer = document.getElementById('pages');
         const loading = document.getElementById('loading');
 
-        pdfjsLib.getDocument({ url }).promise.then(async (pdf) => {
+        pdfjsLib.getDocument(getDocOpts).promise.then(async (pdf) => {
           const total = pdf.numPages;
           if (!total) throw new Error('Empty PDF');
           loading.textContent = `Rendering 1/${total}…`;
@@ -65,9 +70,10 @@
           for (let p = 1; p <= total; p++) {
             const page = await pdf.getPage(p);
 
-            const unscaledViewport = page.getViewport({ scale: 1 });
+            // Fit to screen width with small padding
+            const unscaled = page.getViewport({ scale: 1 });
             const targetWidth = Math.min(document.documentElement.clientWidth, window.innerWidth) - 16;
-            const scale = Math.max(0.1, targetWidth / unscaledViewport.width);
+            const scale = Math.max(0.1, targetWidth / unscaled.width);
             const viewport = page.getViewport({ scale });
 
             const canvas = document.createElement('canvas');
