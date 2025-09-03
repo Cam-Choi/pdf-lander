@@ -5,35 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Document</title>
     <style>
-      /* Full-bleed layout */
       html, body { height: 100%; margin: 0; background: #111; }
       .viewer { position: fixed; inset: 0; }
       iframe, embed, object { width: 100%; height: 100%; border: 0; background: #111; }
-      /* Optional: hide scroll bounce on mobile */
       body { overscroll-behavior: none; }
-      /* Optional: dark background to avoid white flashes */
     </style>
+    <!--
+      MOBILE NOTE:
+      Many mobile browsers (especially iOS Safari) only render the first page of inline PDFs.
+      To fix that, we redirect to a bundled PDF.js viewer which works reliably on phones.
+
+      Setup steps (one-time):
+      1) Download the official prebuilt PDF.js ("pdfjs-dist") ZIP from Mozilla releases.
+         https://github.com/mozilla/pdfjs-dist/releases  (download the latest *zip*)
+      2) In your repo, create a folder named "pdfjs" and upload the ZIP contents of the "web" and "build" folders into it,
+         so you have: /pdfjs/web/* and /pdfjs/build/* in your repo.
+      3) Put your PDF alongside this index.html as "document.pdf" (or adjust the file= param below).
+
+      After that, this page will auto-open the PDF.js viewer on phones, and use a native iframe on desktops.
+    -->
+    <script>
+      // Simple mobile detection
+      const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile) {
+        // Redirect to the PDF.js viewer for reliable multi‑page mobile rendering
+        const target = 'pdfjs/web/viewer.html?file=' + encodeURIComponent('../document.pdf') + '#zoom=page-width';
+        window.location.replace(target);
+      }
+    </script>
   </head>
   <body>
-    <!--
-      HOW TO USE
-      1) Put your PDF in the same folder (e.g., "document.pdf").
-      2) Set the src below to that filename: src="document.pdf".
-      3) Commit this + your PDF to GitHub and enable Pages.
-
-      NOTES
-      • You cannot truly prevent downloading; browsers must fetch the PDF to display it.
-      • Hosting the PDF in the same repo avoids CORS headaches.
-      • For widest compatibility, keep filenames ASCII (letters, numbers, hyphen/underscore).
-    -->
-
-    <!-- Primary approach -->
+    <!-- Desktop/modern browsers get native inline PDF -->
     <iframe class="viewer" src="document.pdf" title="PDF"></iframe>
 
-    <!-- Progressive enhancement / fallbacks (uncomment if you prefer) -->
+    <!-- Optional fallbacks (uncomment if you like) -->
     <!--
     <embed class="viewer" src="document.pdf" type="application/pdf" />
-
     <object class="viewer" data="document.pdf" type="application/pdf">
       <p style="color:#ddd; font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; padding: 1rem;">
         Your browser can’t display PDFs inline. <a href="document.pdf" style="color:#9cf">Open the file</a>.
@@ -41,9 +48,9 @@
     </object>
     -->
 
-    <!-- Optional: open the PDF directly if embedded view fails -->
     <noscript>
-      <meta http-equiv="refresh" content="0; url=document.pdf" />
+      <!-- No JS? Open PDF.js viewer directly -->
+      <meta http-equiv="refresh" content="0; url=pdfjs/web/viewer.html?file=../document.pdf#zoom=page-width" />
     </noscript>
   </body>
 </html>
