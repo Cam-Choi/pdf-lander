@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Document</title>
+    <style>
+      /* Full-bleed layout */
+      html, body { height: 100%; margin: 0; background: #111; }
+      .viewer { position: fixed; inset: 0; }
+      iframe, embed, object { width: 100%; height: 100%; border: 0; background: #111; }
+      /* Optional: hide scroll bounce on mobile */
+      body { overscroll-behavior: none; }
+      /* Optional: dark background to avoid white flashes */
+    </style>
+  </head>
+  <body>
+    <!--
+      HOW TO USE
+      1) Put your PDF in the same folder (e.g., "document.pdf").
+      2) Set the src below to that filename: src="document.pdf".
+      3) Commit this + your PDF to GitHub and enable Pages.
+
+      NOTES
+      • You cannot truly prevent downloading; browsers must fetch the PDF to display it.
+      • Hosting the PDF in the same repo avoids CORS headaches.
+      • For widest compatibility, keep filenames ASCII (letters, numbers, hyphen/underscore).
+    -->
+
+    <!-- Primary approach -->
+    <iframe class="viewer" src="document.pdf" title="PDF"></iframe>
+
+    <!-- Progressive enhancement / fallbacks (uncomment if you prefer) -->
+    <!--
+    <embed class="viewer" src="document.pdf" type="application/pdf" />
+
+    <object class="viewer" data="document.pdf" type="application/pdf">
+      <p style="color:#ddd; font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; padding: 1rem;">
+        Your browser can’t display PDFs inline. <a href="document.pdf" style="color:#9cf">Open the file</a>.
+      </p>
+    </object>
+    -->
+
+    <!-- Optional: open the PDF directly if embedded view fails -->
+    <noscript>
+      <meta http-equiv="refresh" content="0; url=document.pdf" />
+    </noscript>
+  </body>
+</html>
