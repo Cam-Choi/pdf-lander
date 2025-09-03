@@ -13,8 +13,8 @@
       /* Mobile scroll renderer */
       #mobile-root { position: fixed; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px 0 48px; display: none; }
       #pages { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-      canvas { max-width: 100%; height: auto; box-shadow: 0 2px 24px rgba(0,0,0,.4); border-radius: 6px; background: #111; }
-      #loading { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; opacity: .8; }
+      canvas { box-shadow: 0 2px 24px rgba(0,0,0,.35); border-radius: 6px; background: #111; display: block; }
+      #loading { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; opacity: .85; }
       #fallback { display:none; position: absolute; inset: 0; place-items: center; }
       a { color: #9cf; }
     </style>
@@ -23,7 +23,7 @@
     <!-- Desktop: native inline PDF -->
     <iframe id="desktop-frame" class="viewer" src="https://Cam-Choi.github.io/pdf-lander/document.pdf" title="PDF"></iframe>
 
-    <!-- Mobile: scroll-only renderer -->
+    <!-- Mobile: scroll-only renderer (DPR-aware) -->
     <div id="mobile-root" aria-live="polite">
       <div id="loading">Loading PDF…</div>
       <div id="pages"></div>
@@ -40,12 +40,11 @@
         // Desktop uses built-in viewer
         document.getElementById('desktop-frame').style.display = 'block';
       } else {
-        // Mobile: use PDF.js (CDN) and render pages into canvases
+        // Mobile: PDF.js (CDN) + high-DPI rendering
         document.getElementById('desktop-frame').style.display = 'none';
         document.getElementById('mobile-root').style.display = 'block';
 
         const script = document.createElement('script');
-        // Stable classic build (includes window.pdfjsLib)
         script.src = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js";
         script.onload = startMobileRenderer;
         script.onerror = () => document.getElementById('fallback').style.display = 'grid';
@@ -56,35 +55,43 @@
         const pdfjsLib = window.pdfjsLib;
         if (!pdfjsLib) { document.getElementById('fallback').style.display = 'grid'; return; }
 
-        // Avoid needing a worker file; run in main thread (fine for typical PDFs)
+        // Simpler reliability: avoid separate worker file
         const getDocOpts = { url: PDF_URL, disableWorker: true };
 
         const pagesContainer = document.getElementById('pages');
         const loading = document.getElementById('loading');
+        const DPR = Math.min(window.devicePixelRatio || 1, 2.5); // cap to avoid huge memory
 
         pdfjsLib.getDocument(getDocOpts).promise.then(async (pdf) => {
           const total = pdf.numPages;
           if (!total) throw new Error('Empty PDF');
-          loading.textContent = `Rendering 1/${total}…`;
 
           for (let p = 1; p <= total; p++) {
+            loading.textContent = `Rendering ${p}/${total}…`;
             const page = await pdf.getPage(p);
 
-            // Fit to screen width with small padding
+            // Calculate base scale to fit CSS width, then multiply by DPR for crispness
             const unscaled = page.getViewport({ scale: 1 });
-            const targetWidth = Math.min(document.documentElement.clientWidth, window.innerWidth) - 16;
-            const scale = Math.max(0.1, targetWidth / unscaled.width);
-            const viewport = page.getViewport({ scale });
+            const cssTargetWidth = Math.min(document.documentElement.clientWidth, window.innerWidth) - 16; // side padding
+            const baseScale = Math.max(0.1, cssTargetWidth / unscaled.width);
+            const renderScale = baseScale * DPR;
 
+            const viewport = page.getViewport({ scale: renderScale });
+
+            // Canvas pixel size = high DPI; CSS size = logical width/height (divide by DPR)
             const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d', { alpha: false });
-            canvas.width = Math.floor(viewport.width);
+            const ctx = canvas.getContext('2d', { alpha: false });
+
+            canvas.width  = Math.floor(viewport.width);
             canvas.height = Math.floor(viewport.height);
+            canvas.style.width  = Math.floor(viewport.width  / DPR) + 'px';
+            canvas.style.height = Math.floor(viewport.height / DPR) + 'px';
+
+            // Optional: improve perceived sharpness on some browsers
+            if (typeof ctx.imageSmoothingEnabled === 'boolean') ctx.imageSmoothingEnabled = true;
 
             pagesContainer.appendChild(canvas);
-            loading.textContent = `Rendering ${p}/${total}…`;
-
-            await page.render({ canvasContext: context, viewport }).promise;
+            await page.render({ canvasContext: ctx, viewport }).promise;
           }
 
           loading.remove();
