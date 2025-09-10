@@ -1,15 +1,16 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>PDF Viewer</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>PDF</title>
   <style>
-    html, body { margin: 0; height: 100%; }
-    iframe { width: 100%; height: 100%; border: none; }
+    html, body { margin:0; height:100%; }
+    /* svh handles mobile browser UI correctly */
+    #pdf { width:100%; height:100svh; border:0; display:block; }
   </style>
 </head>
 <body>
-  <iframe src="document.pdf#view=FitH" allow="fullscreen"></iframe>
+  <embed id="pdf" type="application/pdf" src="document.pdf#view=FitH&toolbar=0" />
 </body>
 </html>
