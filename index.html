@@ -1,83 +1,32 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>PDF Viewer</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<style>
-  :root { color-scheme: light dark; }
-  html,body{margin:0;padding:0;background:#111;color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-  #app { min-height: 100svh; }
-  .toolbar{position:sticky;top:0;background:#111;padding:8px 12px;border-bottom:1px solid #222;z-index:10}
-  .hint{font-size:12px;opacity:.7}
-  #viewer{width:100%;max-width:1200px;margin:0 auto;padding:12px}
-  .page{background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.3);display:block;margin:12px auto}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Document</title>
+  <style>
+    :root { --bg:#0e0e0f; --fg:#e8e8ea; }
+    html, body { margin:0; background:var(--bg); color:var(--fg); }
+    main { max-width: 1100px; margin: 0 auto; padding: 12px 0 48px; }
+    .page { display:block; width:100%; height:auto; margin:0 auto 12px;
+            box-shadow:0 2px 24px rgba(0,0,0,.35); border-radius:6px; background:#111; }
+    /* Helps mobile compositing feel stable while pinching/scrolling */
+    img { transform: translateZ(0); }
+  </style>
 </head>
 <body>
-<div id="app">
-  <div class="toolbar"><span class="hint">Loading…</span></div>
-  <div id="viewer"></div>
-</div>
+  <main>
+    <!-- Replace these with your actual list of pages (keep order). Example: -->
+    <img class="page" loading="lazy" decoding="async" src="img/page-001.webp" alt="Page 1" width="1080" height="1528">
+    <img class="page" loading="lazy" decoding="async" src="img/page-002.webp" alt="Page 2" width="1080" height="1528">
+    <img class="page" loading="lazy" decoding="async" src="img/page-003.webp" alt="Page 3" width="1080" height="1528">
+    <!-- …add the rest… -->
+  </main>
 
-<!-- pdf.js (pinned version) -->
-<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.5.136/build/pdf.min.js"></script>
-<script>
-(function () {
-  const params = new URLSearchParams(location.search);
-  const pdfUrl = params.get('pdf') || 'document.pdf';
-  const viewer = document.getElementById('viewer');
-  const hint = document.querySelector('.hint');
-  const DPR = Math.min(window.devicePixelRatio || 1, 2); // cap for perf
-
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.5.136/build/pdf.worker.min.js';
-
-  async function render() {
-    viewer.innerHTML = '';
-    const loading = pdfjsLib.getDocument(pdfUrl);
-    const pdf = await loading.promise;
-    hint.textContent = `Pages: ${pdf.numPages}`;
-
-    const width = viewer.clientWidth - 24; // padding allowance
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const vp1 = page.getViewport({ scale: 1 });
-      const scale = width / vp1.width;
-
-      const canvas = document.createElement('canvas');
-      canvas.className = 'page';
-      canvas.style.width  = Math.round(vp1.width  * scale) + 'px';
-      canvas.style.height = Math.round(vp1.height * scale) + 'px';
-      canvas.width  = Math.round(vp1.width  * scale * DPR);
-      canvas.height = Math.round(vp1.height * scale * DPR);
-
-      const ctx = canvas.getContext('2d', { alpha: false });
-      await page.render({
-        canvasContext: ctx,
-        viewport: page.getViewport({ scale: scale * DPR }),
-        intent: 'display'
-      }).promise;
-
-      viewer.appendChild(canvas);
-    }
-    hint.textContent = `Loaded ${pdf.numPages} page(s)`;
-  }
-
-  let t;
-  addEventListener('resize', () => { clearTimeout(t); t = setTimeout(render, 150); }, { passive: true });
-
-  render().catch(err => {
-    console.error(err);
-    hint.textContent = 'Failed to load PDF';
-    const a = document.createElement('a');
-    a.href = pdfUrl;
-    a.textContent = 'Open the PDF directly';
-    a.style.display = 'block';
-    a.style.padding = '12px';
-    viewer.appendChild(a);
-  });
-})();
-</script>
+  <noscript>
+    <p style="text-align:center">
+      Images shown statically. <a href="https://Cam-Choi.github.io/pdf-lander/document.pdf">Open original PDF</a>.
+    </p>
+  </noscript>
 </body>
 </html>
